@@ -7,20 +7,16 @@ package com.team254.frc2017.paths.profiles;
  */
 public interface FieldProfile {
 
-    public double getRedCenterToBoiler();
-
     public double getRedWallToAirship();
-
-    public double getRedCenterToHopper();
-
-    public double getRedWallToHopper();
-
-    public double getBlueCenterToBoiler();
+    
+    public double getRedCenterToDivide();
+    
+    public double getRedCenterToFar();
 
     public double getBlueWallToAirship();
-
-    public double getBlueCenterToHopper();
-
-    public double getBlueWallToHopper();
+    
+    public double getBlueCenterToBoiler();
+    
+    public double getBlueCenterToFar();
 
 }

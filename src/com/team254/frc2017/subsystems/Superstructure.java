@@ -8,7 +8,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.team254.frc2017.Constants;
 import com.team254.frc2017.Robot;
 import com.team254.frc2017.RobotState;
-import com.team254.frc2017.ShooterAimingParameters;
+import com.team254.frc2017.GearAimingParameters;
 import com.team254.frc2017.loops.Loop;
 import com.team254.frc2017.loops.Looper;
 import com.team254.lib.util.CircularBuffer;
@@ -493,11 +493,11 @@ public class Superstructure extends Subsystem {
 
     public synchronized boolean autoSpinShooter(boolean allow_shooting) {
         final double timestamp = Timer.getFPGATimestamp();
-        final Optional<ShooterAimingParameters> aimOptional = RobotState.getInstance()
+        final Optional<GearAimingParameters> aimOptional = RobotState.getInstance()
                 .getAimingParameters();
         mLED.setWantedState(LED.WantedState.FIND_RANGE);
         if (aimOptional.isPresent()) {
-            final ShooterAimingParameters aim = aimOptional.get();
+            final GearAimingParameters aim = aimOptional.get();
             double range = aim.getRange();
             final boolean range_valid = Constants.kIsShooterTuning || (range >= Constants.kShooterAbsoluteRangeFloor
                     && range <= Constants.kShooterAbsoluteRangeCeiling);

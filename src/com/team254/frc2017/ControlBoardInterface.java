@@ -26,7 +26,11 @@ public interface ControlBoardInterface {
 
     boolean getExhaustButton();
 
-    boolean getUnjamButton();
+    boolean getLeftGearButton();
+    
+    boolean getCenterGearButton();
+    
+    boolean getRightGearButton();
 
     boolean getShooterClosedLoopButton();
 

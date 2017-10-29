@@ -275,8 +275,8 @@ public class PathSegment {
 
     public String toString() {
         if (isLine) {
-            return "(" + "start: " + start + ", end: " + end + ", speed: " + maxSpeed // + ", profile: " +
-                                                                                      // speedController
+            return "(" + "start: " + start + ", end: " + end + ", speed: " + maxSpeed  + ", profile: " +
+                                                                                       speedController
                     + ")";
         } else {
             return "(" + "start: " + start + ", end: " + end + ", center: " + center + ", speed: " + maxSpeed

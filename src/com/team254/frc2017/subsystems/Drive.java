@@ -13,9 +13,11 @@ import com.ctre.CANTalon.VelocityMeasurementPeriod;
 import com.team254.frc2017.Constants;
 import com.team254.frc2017.Kinematics;
 import com.team254.frc2017.RobotState;
-import com.team254.frc2017.ShooterAimingParameters;
+import com.team254.frc2017.GearAimingParameters;
 import com.team254.frc2017.loops.Loop;
 import com.team254.frc2017.loops.Looper;
+import com.team254.frc2017.paths.PathBuilder;
+import com.team254.frc2017.paths.PathBuilder.Waypoint;
 import com.team254.lib.util.DriveSignal;
 import com.team254.lib.util.ReflectingCSVWriter;
 import com.team254.lib.util.Util;
@@ -26,8 +28,12 @@ import com.team254.lib.util.drivers.CANTalonFactory;
 import com.team254.lib.util.drivers.NavX;
 import com.team254.lib.util.math.RigidTransform2d;
 import com.team254.lib.util.math.Rotation2d;
+import com.team254.lib.util.math.Translation2d;
 import com.team254.lib.util.math.Twist2d;
+import com.team254.lib.util.motion.MotionProfileConstraints;
+import com.team254.lib.util.motion.ProfileFollower;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -57,6 +63,7 @@ public class Drive extends Subsystem {
         PATH_FOLLOWING, // used for autonomous driving
         AIM_TO_GOAL, // turn to face the boiler
         TURN_TO_HEADING, // turn in place
+        DRIVE_TOWARDS_PEG,
         DRIVE_TOWARDS_GOAL_COARSE_ALIGN, // turn to face the boiler, then DRIVE_TOWARDS_GOAL_COARSE_ALIGN
         DRIVE_TOWARDS_GOAL_APPROACH // drive forwards until we are at optimal shooting distance
     }
@@ -65,7 +72,7 @@ public class Drive extends Subsystem {
      * Check if the drive talons are configured for velocity control
      */
     protected static boolean usesTalonVelocityControl(DriveControlState state) {
-        if (state == DriveControlState.VELOCITY_SETPOINT || state == DriveControlState.PATH_FOLLOWING) {
+        if (state == DriveControlState.VELOCITY_SETPOINT || state == DriveControlState.PATH_FOLLOWING || state == DriveControlState.DRIVE_TOWARDS_PEG) {
             return true;
         }
         return false;
@@ -94,10 +101,13 @@ public class Drive extends Subsystem {
 
     // Controllers
     private RobotState mRobotState = RobotState.getInstance();
-    private PathFollower mPathFollower;
+    private PathFollower mPathFollower, mGearPathFollower;
 
     // These gains get reset below!!
-    private Rotation2d mTargetHeading = new Rotation2d();
+    private Translation2d mGearPathStartPosition;
+    private double mGearPathStartVelocity;
+    private Rotation2d mTargetHeading = Rotation2d.fromDegrees(180);
+    private boolean mIsGearScored = false;
     private Path mCurrentPath = null;
 
     // Hardware states
@@ -132,6 +142,11 @@ public class Drive extends Subsystem {
                     if (mPathFollower != null) {
                         updatePathFollower(timestamp);
                         mCSVWriter.add(mPathFollower.getDebug());
+                    }
+                    return;
+                case DRIVE_TOWARDS_PEG:
+                    if (mGearPathFollower != null) {
+                        updateGearPathFollower(timestamp);
                     }
                     return;
                 case AIM_TO_GOAL:
@@ -224,11 +239,29 @@ public class Drive extends Subsystem {
     public void registerEnabledLoops(Looper in) {
         in.register(mLoop);
     }
+    
+    public Path generateGearPath(Translation2d startPosition, double startVelocity, Rotation2d gearHeading) {
+        ArrayList<Waypoint> sWaypoints = new ArrayList<Waypoint>();
+        RigidTransform2d gearPose = mRobotState.getPegPose().get();
+        gearPose.setRotation(gearHeading);
+        
+        sWaypoints.add(new Waypoint(startPosition, 0, Constants.kGearPlacementSpeed));
+        sWaypoints.add(new Waypoint(gearPose.getTranslation().translateBy(gearPose.getRotation().toTranslation().scale(Constants.kGearPlacementDistance + Constants.kGearTurnDistance)), 0, Constants.kGearPlacementSpeed));
+        sWaypoints.add(new Waypoint(gearPose.getTranslation().translateBy(gearPose.getRotation().toTranslation().scale(Constants.kGearPlacementDistance)), 0, Constants.kGearPlacementSpeed));
+
+        
+        return PathBuilder.buildPathFromWaypoints(sWaypoints, startVelocity, 0);
+    }
+    
+    public boolean isGearDriving() {
+        return mDriveControlState == DriveControlState.DRIVE_TOWARDS_PEG;
+    }
 
     /**
      * Configure talons for open loop control
      */
     public synchronized void setOpenLoop(DriveSignal signal) {
+        System.out.println("Something is calling setOpenLoop");
         if (mDriveControlState != DriveControlState.OPEN_LOOP) {
             mLeftMaster.changeControlMode(CANTalon.TalonControlMode.PercentVbus);
             mRightMaster.changeControlMode(CANTalon.TalonControlMode.PercentVbus);
@@ -465,7 +498,7 @@ public class Drive extends Subsystem {
      * Is called periodically when the robot is auto-aiming towards the boiler.
      */
     private void updateGoalHeading(double timestamp) {
-        Optional<ShooterAimingParameters> aim = mRobotState.getAimingParameters();
+        Optional<GearAimingParameters> aim = mRobotState.getAimingParameters();
         if (aim.isPresent()) {
             mTargetHeading = aim.get().getRobotToGoal();
         }
@@ -516,7 +549,7 @@ public class Drive extends Subsystem {
         if (mIsOnTarget) {
             // Done coarse alignment.
 
-            Optional<ShooterAimingParameters> aim = mRobotState.getAimingParameters();
+            Optional<GearAimingParameters> aim = mRobotState.getAimingParameters();
             if (aim.isPresent()) {
                 final double distance = aim.get().getRange();
 
@@ -541,7 +574,7 @@ public class Drive extends Subsystem {
      * AIM_TO_GOAL state for one final alignment
      */
     private void updateDriveTowardsGoalApproach(double timestamp) {
-        Optional<ShooterAimingParameters> aim = mRobotState.getAimingParameters();
+        Optional<GearAimingParameters> aim = mRobotState.getAimingParameters();
         mIsApproaching = true;
         if (aim.isPresent()) {
             final double distance = aim.get().getRange();
@@ -638,6 +671,90 @@ public class Drive extends Subsystem {
     }
 
     /**
+     * Configures the drivebase to score a gear. Used for autonomous gear placement
+     * 
+     * @see Path
+     */
+    
+    public synchronized void setWantDriveGearPath() {
+        setWantDriveGearPath(null);
+    }
+    
+    public void setTargetHeading(Rotation2d heading) {
+        if (mDriveControlState != DriveControlState.DRIVE_TOWARDS_PEG) {
+            mTargetHeading = heading;
+            System.out.println(mTargetHeading.getDegrees());
+        }
+    }
+    
+    public synchronized void setWantDriveGearPath(Rotation2d direction) {
+        System.out.println("Something is calling setWantDriveGearPath");
+        if(!mRobotState.getPegPose().isPresent()) {
+            System.out.println("Camera can't see the peg!");
+            LED.getInstance().setWantedState(LED.WantedState.BLINK); //driver feedback
+            return;
+        }
+        if (mDriveControlState != DriveControlState.DRIVE_TOWARDS_PEG) {
+            configureTalonsForSpeedControl();
+            RobotState.getInstance().resetDistanceDriven();
+            mIsGearScored = false;
+            mGearPathStartPosition = mRobotState.getLatestFieldToVehicle().getValue().getTranslation();
+            mGearPathStartVelocity = -mRobotState.getPredictedVelocity().dx;  //MIGHT BREAK. USE 0 IF THAT'S THE CASE
+//            Constants.kGearTurnDistance = mRobotState.getAimingParameters().get().getRange() * 0.75;
+//            System.out.println(Constants.kGearTurnDistance);
+            if(direction == null) {
+//                mTargetHeading = mRobotState.getPegPose().get().getRotation();
+            } else {
+//                mTargetHeading = direction;
+            }
+            
+//            mTargetHeading = new Rotation2d();
+            
+            //MAYBE GET RID OF THAT YOOOOO ^^^^^
+            
+            
+            
+            
+            mGearPathFollower = new PathFollower(generateGearPath(mGearPathStartPosition, mGearPathStartVelocity, mTargetHeading), true, //TODO: set to false for new bot
+                    new PathFollower.Parameters(
+                            new Lookahead(Constants.kGearMinLookAhead, Constants.kGearMaxLookAhead,
+                                    Constants.kGearMinLookAheadSpeed, Constants.kGearMaxLookAheadSpeed),
+                            Constants.kInertiaSteeringGain, Constants.kPathFollowingProfileKp,
+                            Constants.kPathFollowingProfileKi, Constants.kPathFollowingProfileKv,
+                            Constants.kPathFollowingProfileKffv, Constants.kPathFollowingProfileKffa,
+                            Constants.kPathFollowingMaxVel, Constants.kPathFollowingMaxAccel,
+                            Constants.kPathFollowingGoalPosTolerance, Constants.kPathFollowingGoalVelTolerance,
+                            Constants.kPathStopSteeringDistance));
+            mDriveControlState = DriveControlState.DRIVE_TOWARDS_PEG;
+        }
+    }
+    
+    private void updateGearPathFollower(double timestamp) {
+        RigidTransform2d robot_pose = mRobotState.getLatestFieldToVehicle().getValue();
+        if(mRobotState.getPegPose().isPresent()) {
+            mGearPathFollower.updatePath(generateGearPath(mGearPathStartPosition, mGearPathStartVelocity, mTargetHeading));
+        }
+        Twist2d command = mGearPathFollower.update(timestamp, robot_pose,
+                RobotState.getInstance().getDistanceDriven(), RobotState.getInstance().getPredictedVelocity().dx);
+        SmartDashboard.putNumber("accel x", mNavXBoard.getRawAccelX());
+        if(mGearPathFollower.isFinished() || mNavXBoard.getRawAccelX() > 1.75) { //OR SENSOR DETECTS PEG
+            forceDoneWithGearPath();
+            mIsGearScored = true;
+            System.out.println("Gear Scored!!!!");
+            // SCORE GEAR
+            // BLINK LIGHT
+            // 
+        } else {
+            Kinematics.DriveVelocity setpoint = Kinematics.inverseKinematics(command);
+            updateVelocitySetpoint(setpoint.left, setpoint.right);
+        }
+    }
+    
+    public boolean isGearScored() {
+        return mIsGearScored;
+    }
+    
+    /**
      * Configures the drivebase to drive a path. Used for autonomous driving
      * 
      * @see Path
@@ -671,7 +788,24 @@ public class Drive extends Subsystem {
             return true;
         }
     }
+    
+    public synchronized boolean isDoneWithGearPath() {
+        if (mDriveControlState == DriveControlState.DRIVE_TOWARDS_PEG && mGearPathFollower != null) {
+            return mGearPathFollower.isFinished();
+        } else {
+            System.out.println("Robot is not in gear scoring mode");
+            return true;
+        }
+    }
 
+    public synchronized void forceDoneWithGearPath() {
+        if (mDriveControlState == DriveControlState.DRIVE_TOWARDS_PEG && mGearPathFollower != null) {
+            mGearPathFollower.forceFinish();
+        } else {
+            System.out.println("Robot is not in path following mode");
+        }
+    }
+    
     public synchronized void forceDoneWithPath() {
         if (mDriveControlState == DriveControlState.PATH_FOLLOWING && mPathFollower != null) {
             mPathFollower.forceFinish();

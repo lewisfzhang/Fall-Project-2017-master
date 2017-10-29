@@ -8,7 +8,7 @@ import com.ctre.CANTalon;
 
 import com.team254.frc2017.Constants;
 import com.team254.frc2017.RobotState;
-import com.team254.frc2017.ShooterAimingParameters;
+import com.team254.frc2017.GearAimingParameters;
 import com.team254.frc2017.loops.Loop;
 import com.team254.frc2017.loops.Looper;
 import com.team254.lib.util.CircularBuffer;
@@ -331,7 +331,7 @@ public class Shooter extends Subsystem {
         mDebug.voltage = voltage;
         mDebug.control_method = mControlMethod;
         mDebug.kF = mKfEstimator.getAverage();
-        Optional<ShooterAimingParameters> params = RobotState.getInstance().getAimingParameters();
+        Optional<GearAimingParameters> params = RobotState.getInstance().getAimingParameters();
         if (params.isPresent()) {
             mDebug.range = params.get().getRange();
         } else {

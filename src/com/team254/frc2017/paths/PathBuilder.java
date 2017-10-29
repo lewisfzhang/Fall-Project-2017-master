@@ -21,7 +21,12 @@ public class PathBuilder {
     private static final double kReallyBigNumber = 1E9;
 
     public static Path buildPathFromWaypoints(List<Waypoint> w) {
+        return buildPathFromWaypoints(w, 0, 0);
+    }
+    
+    public static Path buildPathFromWaypoints(List<Waypoint> w, double startSpeed, double endSpeed) {
         Path p = new Path();
+        p.setStartSpeed(startSpeed);
         if (w.size() < 2)
             throw new Error("Path must contain at least 2 waypoints");
         int i = 0;
@@ -31,7 +36,7 @@ public class PathBuilder {
                 i++;
             } while (i < w.size() - 2);
         }
-        new Line(w.get(w.size() - 2), w.get(w.size() - 1)).addToPath(p, 0);
+        new Line(w.get(w.size() - 2), w.get(w.size() - 1)).addToPath(p, endSpeed);
         p.extrapolateLast();
         p.verifySpeeds();
         // System.out.println(p);

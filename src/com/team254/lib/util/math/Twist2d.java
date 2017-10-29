@@ -26,4 +26,8 @@ public class Twist2d {
     public Twist2d scaled(double scale) {
         return new Twist2d(dx * scale, dy * scale, dtheta * scale);
     }
+    
+    public String toString() {
+        return "dx: " + dx + ", dy: " + dy + ", dtheta: " + dtheta;
+    }
 }

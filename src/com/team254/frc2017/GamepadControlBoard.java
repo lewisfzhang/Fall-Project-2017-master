@@ -86,7 +86,7 @@ public class GamepadControlBoard implements ControlBoardInterface {
     }
 
     @Override
-    public boolean getUnjamButton() {
+    public boolean getLeftGearButton() {
         return false;
     }
 
@@ -124,6 +124,18 @@ public class GamepadControlBoard implements ControlBoardInterface {
 
     @Override
     public boolean getDriveAimButton() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean getCenterGearButton() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public boolean getRightGearButton() {
         // TODO Auto-generated method stub
         return false;
     }

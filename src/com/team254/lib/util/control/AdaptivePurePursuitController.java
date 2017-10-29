@@ -64,6 +64,9 @@ public class AdaptivePurePursuitController {
         }
 
         final Path.TargetPointReport report = mPath.getTargetPoint(pose.getTranslation(), mLookahead);
+        if(report == null) {
+            mAtEndOfPath = true;
+        }
         if (isFinished()) {
             // Stop.
             return new Command(Twist2d.identity(), report.closest_point_distance, report.max_speed, 0.0,
@@ -93,6 +96,10 @@ public class AdaptivePurePursuitController {
 
     public boolean hasPassedMarker(String marker) {
         return mPath.hasPassedMarker(marker);
+    }
+    
+    public void updatePath(Path path) {
+        mPath = path;
     }
 
     public static class Arc {

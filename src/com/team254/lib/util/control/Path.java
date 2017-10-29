@@ -20,6 +20,7 @@ public class Path {
     List<PathSegment> segments;
     PathSegment prevSegment;
     HashSet<String> mMarkersCrossed = new HashSet<String>();
+    double mStartSpeed = 0;
 
     public void extrapolateLast() {
         PathSegment last = segments.get(segments.size() - 1);
@@ -43,6 +44,10 @@ public class Path {
     public void addSegment(PathSegment segment) {
         segments.add(segment);
     }
+    
+    public void setStartSpeed(double speed) {
+        mStartSpeed = speed;
+    }
 
     /**
      * @return the last MotionState in the path
@@ -52,7 +57,7 @@ public class Path {
             MotionState endState = segments.get(segments.size() - 1).getEndState();
             return new MotionState(0.0, 0.0, endState.vel(), endState.acc());
         } else {
-            return new MotionState(0, 0, 0, 0);
+            return new MotionState(0, 0, mStartSpeed, 0);
         }
     }
 
@@ -99,6 +104,10 @@ public class Path {
      */
     public TargetPointReport getTargetPoint(Translation2d robot, Lookahead lookahead) {
         TargetPointReport rv = new TargetPointReport();
+        if(segments.size() == 0) {
+            
+            return null;
+        }
         PathSegment currentSegment = segments.get(0);
         rv.closest_point = currentSegment.getClosestPoint(robot);
         rv.closest_point_distance = new Translation2d(robot, rv.closest_point).norm();
@@ -176,9 +185,9 @@ public class Path {
      * Ensures that all speeds in the path are attainable and robot can slow down in time
      */
     public void verifySpeeds() {
-        double maxStartSpeed = 0.0;
+        double maxStartSpeed = mStartSpeed;
         double[] startSpeeds = new double[segments.size() + 1];
-        startSpeeds[segments.size()] = 0.0;
+        startSpeeds[segments.size()] = getLastMotionState().vel();
         for (int i = segments.size() - 1; i >= 0; i--) {
             PathSegment segment = segments.get(i);
             maxStartSpeed += Math
@@ -194,7 +203,7 @@ public class Path {
         for (int i = 0; i < segments.size(); i++) {
             PathSegment segment = segments.get(i);
             double endSpeed = startSpeeds[i + 1];
-            MotionState startState = (i > 0) ? segments.get(i - 1).getEndState() : new MotionState(0, 0, 0, 0);
+            MotionState startState = (i > 0) ? segments.get(i - 1).getEndState() : new MotionState(0, 0, mStartSpeed, 0);
             startState = new MotionState(0, 0, startState.vel(), startState.vel());
             segment.createMotionProfiler(startState, endSpeed);
         }

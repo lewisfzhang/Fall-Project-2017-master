@@ -24,8 +24,15 @@ public class Constants extends ConstantsBase {
     // Section 3.13
     // ...and https://firstfrc.blob.core.windows.net/frc2017/Drawings/2017FieldComponents.pdf
     // Parts GE-17203-FLAT and GE-17371 (sheet 7)
-    public static double kBoilerTargetTopHeight = 88.0;
-    public static double kBoilerRadius = 7.5;
+    public static double kPegTargetBottomHeight = 10.75;
+    public static double kGearTurnDistance = 24.0;
+    public static double kGearPlacementDistance = 10;//48.0;
+    public static double kGearPlacementSpeed = 60.0;
+    public static double kMinSpeed = 15.0;
+    public static double kGearMinLookAhead = 16.0; // inches
+    public static double kGearMinLookAheadSpeed = 9.0; // inches per second
+    public static double kGearMaxLookAhead = 22.0; // inches
+    public static double kGearMaxLookAheadSpeed = 120.0; // inches per second
 
     // Shooter tuning parameters
     public static boolean kIsShooterTuning = false;
@@ -60,7 +67,7 @@ public class Constants extends ConstantsBase {
 
     // PID gains for drive velocity loop (HIGH GEAR)
     // Units: setpoint, error, and output are in inches per second.
-    public static double kDriveHighGearVelocityKp = 1.2;
+    public static double kDriveHighGearVelocityKp = 0.8;
     public static double kDriveHighGearVelocityKi = 0.0;
     public static double kDriveHighGearVelocityKd = 6.0;
     public static double kDriveHighGearVelocityKf = .15;
@@ -152,8 +159,8 @@ public class Constants extends ConstantsBase {
     // Drive
     public static final int kLeftDriveMasterId = 12;
     public static final int kLeftDriveSlaveId = 11;
-    public static final int kRightDriveMasterId = 3;
-    public static final int kRightDriverSlaveId = 4;
+    public static final int kRightDriveMasterId = 5;
+    public static final int kRightDriverSlaveId = 2;
 
     // Feeder
     public static final int kFeederMasterId = 8;
@@ -168,8 +175,8 @@ public class Constants extends ConstantsBase {
     public static final int kHopperSlaveId = 9;
 
     // Shooter
-    public static final int kRightShooterMasterId = 2;
-    public static final int kRightShooterSlaveId = 1;
+    public static final int kRightShooterMasterId = 4;
+    public static final int kRightShooterSlaveId = 3;
     public static final int kLeftShooterSlave1Id = 13;
     public static final int kLeftShooterSlave2Id = 14;
 
@@ -186,16 +193,16 @@ public class Constants extends ConstantsBase {
     public static int kLEDOnId = 2;
 
     // Digital Outputs
-    public static int kGreenLEDId = 9;
+    public static int kGreenLEDId = 0;
     public static int kRangeLEDId = 8;
 
     // Phone
     public static int kAndroidAppTcpPort = 8254;
 
     // Path following constants
-    public static double kMinLookAhead = 12.0; // inches
+    public static double kMinLookAhead = 24.0; // inches
     public static double kMinLookAheadSpeed = 9.0; // inches per second
-    public static double kMaxLookAhead = 24.0; // inches
+    public static double kMaxLookAhead = 36.0; // inches
     public static double kMaxLookAheadSpeed = 120.0; // inches per second
     public static double kDeltaLookAhead = kMaxLookAhead - kMinLookAhead;
     public static double kDeltaLookAheadSpeed = kMaxLookAheadSpeed - kMinLookAheadSpeed;
@@ -206,14 +213,14 @@ public class Constants extends ConstantsBase {
     public static double kSegmentCompletionTolerance = 0.1; // inches
     public static double kPathFollowingMaxAccel = 120.0; // inches per second^2
     public static double kPathFollowingMaxVel = 120.0; // inches per second
-    public static double kPathFollowingProfileKp = 5.00;
-    public static double kPathFollowingProfileKi = 0.03;
-    public static double kPathFollowingProfileKv = 0.02;
+    public static double kPathFollowingProfileKp = 0.25;
+    public static double kPathFollowingProfileKi = 0.1;
+    public static double kPathFollowingProfileKv = 0.0;
     public static double kPathFollowingProfileKffv = 1.0;
-    public static double kPathFollowingProfileKffa = 0.05;
-    public static double kPathFollowingGoalPosTolerance = 0.75;
+    public static double kPathFollowingProfileKffa = 0.0;
+    public static double kPathFollowingGoalPosTolerance = 1.00;
     public static double kPathFollowingGoalVelTolerance = 12.0;
-    public static double kPathStopSteeringDistance = 9.0;
+    public static double kPathStopSteeringDistance = 0.0;
 
     // Goal tracker constants
     public static double kMaxGoalTrackAge = 1.0;
@@ -225,8 +232,8 @@ public class Constants extends ConstantsBase {
     // Pose of the camera frame w.r.t. the robot frame
     public static double kCameraXOffset = -3.3211;
     public static double kCameraYOffset = 0.0;
-    public static double kCameraZOffset = 20.9;
-    public static double kCameraPitchAngleDegrees = 29.56; // Measured on 4/26
+    public static double kCameraZOffset = 20.0; //height
+    public static double kCameraPitchAngleDegrees = 0; // Measured on 4/26
     public static double kCameraYawAngleDegrees = 0.0;
     public static double kCameraDeadband = 0.0;
 

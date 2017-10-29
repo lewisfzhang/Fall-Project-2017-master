@@ -2,6 +2,8 @@ package com.team254.lib.util.motion;
 
 import com.team254.lib.util.motion.MotionProfileGoal.CompletionBehavior;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 /**
  * A controller for tracking a profile generated to attain a MotionProfileGoal. The controller uses feedforward on
  * acceleration, velocity, and position; proportional feedback on velocity and position; and integral feedback on
@@ -139,6 +141,12 @@ public class ProfileFollower {
         mLatestPosError = mLatestSetpoint.motion_state.pos() - latest_state.pos();
         mLatestVelError = mLatestSetpoint.motion_state.vel() - latest_state.vel();
 
+//        SmartDashboard.putNumber("desired vel", mLatestSetpoint.motion_state.vel());
+//        SmartDashboard.putNumber("current vel", latest_state.vel());
+//        SmartDashboard.putNumber("vel error", mLatestVelError);
+//        SmartDashboard.putNumber("pos error", mLatestPosError);
+        
+        
         // Calculate the feedforward and proportional terms.
         double output = mKp * mLatestPosError + mKv * mLatestVelError + mKffv * mLatestSetpoint.motion_state.vel()
                 + (Double.isNaN(mLatestSetpoint.motion_state.acc()) ? 0.0 : mKffa * mLatestSetpoint.motion_state.acc());
@@ -152,6 +160,8 @@ public class ProfileFollower {
         }
         // Clamp to limits.
         output = Math.max(mMinOutput, Math.min(mMaxOutput, output));
+        
+//        SmartDashboard.putNumber("vel command", output);
 
         return output;
     }

@@ -15,15 +15,11 @@ import java.util.Optional;
  *
  * @see Action
  */
-public class OpenLoopUntilSeesTargetAction implements Action {
+public class WaitUntilSeesTargetAction implements Action {
 
     RobotState mState = RobotState.getInstance();
-    double left;
-    double right;
 
-    public OpenLoopUntilSeesTargetAction(double left, double right) {
-        this.left = left;
-        this.right = right;
+    public WaitUntilSeesTargetAction() {
     }
 
     public boolean isFinished() {
@@ -50,7 +46,6 @@ public class OpenLoopUntilSeesTargetAction implements Action {
     @Override
     public void start() {
         LED.getInstance().setWantedState(LED.WantedState.FIND_RANGE);
-        Drive.getInstance().setOpenLoop(new DriveSignal(left, right));
     }
 
 }

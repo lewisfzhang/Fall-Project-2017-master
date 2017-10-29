@@ -1,5 +1,6 @@
 package com.team254.frc2017.subsystems;
 
+import edu.wpi.first.wpilibj.AnalogOutput;
 import edu.wpi.first.wpilibj.DigitalOutput;
 
 import com.team254.frc2017.Constants;
@@ -41,7 +42,7 @@ public class LED extends Subsystem {
     private WantedState mWantedState = WantedState.OFF;
 
     private boolean mIsLEDOn;
-    private DigitalOutput mLED;
+    private AnalogOutput mLED;
     private DigitalOutput mRangeLED;
     private boolean mIsBlinking = false;
 
@@ -50,8 +51,8 @@ public class LED extends Subsystem {
     private double mTotalBlinkDuration;
 
     public LED() {
-        mLED = new DigitalOutput(Constants.kGreenLEDId);
-        mLED.set(false);
+        mLED = new AnalogOutput(Constants.kGreenLEDId);
+        mLED.setVoltage(0);
 
         mRangeLED = new DigitalOutput(Constants.kRangeLEDId);
         setRangeLEDOff();
@@ -73,7 +74,7 @@ public class LED extends Subsystem {
             synchronized (LED.this) {
                 mSystemState = SystemState.OFF;
                 mWantedState = WantedState.OFF;
-                mLED.set(false);
+                mLED.setVoltage(0);
                 mIsBlinking = false;
             }
 
@@ -207,14 +208,14 @@ public class LED extends Subsystem {
     public synchronized void setLEDOn() {
         if (!mIsLEDOn) {
             mIsLEDOn = true;
-            mLED.set(true);
+            mLED.setVoltage(5.0);
         }
     }
 
     public synchronized void setLEDOff() {
         if (mIsLEDOn) {
             mIsLEDOn = false;
-            mLED.set(false);
+            mLED.setVoltage(0);
         }
     }
 

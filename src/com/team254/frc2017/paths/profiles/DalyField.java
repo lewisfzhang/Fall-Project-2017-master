@@ -6,23 +6,13 @@ package com.team254.frc2017.paths.profiles;
 public class DalyField implements FieldProfile {
 
     @Override
-    public double getRedCenterToBoiler() {
+    public double getRedCenterToDivide() {
         return 125.44;
     }
 
     @Override
     public double getRedWallToAirship() {
         return 114.5;
-    }
-
-    @Override
-    public double getRedCenterToHopper() {
-        return 162;
-    }
-
-    @Override
-    public double getRedWallToHopper() { // TODO: verify this
-        return 110.5;
     }
 
     @Override
@@ -36,13 +26,13 @@ public class DalyField implements FieldProfile {
     }
 
     @Override
-    public double getBlueCenterToHopper() {
-        return 162.25;
+    public double getRedCenterToFar() {
+        return 125.44;
     }
 
     @Override
-    public double getBlueWallToHopper() {
-        return 109.625;
+    public double getBlueCenterToFar() {
+        return 126.76;
     }
 
 }

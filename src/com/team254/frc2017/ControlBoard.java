@@ -87,7 +87,7 @@ public class ControlBoard implements ControlBoardInterface {
     }
 
     @Override
-    public boolean getUnjamButton() {
+    public boolean getLeftGearButton() {
         return mButtonBoard.getRawButton(4);
     }
 
@@ -134,5 +134,15 @@ public class ControlBoard implements ControlBoardInterface {
     @Override
     public boolean getWantGearDriveLimit() {
         return mButtonBoard.getRawButton(12);
+    }
+
+    @Override
+    public boolean getCenterGearButton() {
+        return mButtonBoard.getRawButton(5);
+    }
+
+    @Override
+    public boolean getRightGearButton() {
+        return mButtonBoard.getRawButton(6);
     }
 }

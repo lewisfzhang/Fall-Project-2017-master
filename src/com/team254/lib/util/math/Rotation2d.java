@@ -127,6 +127,16 @@ public class Rotation2d implements Interpolable<Rotation2d> {
         return new Translation2d(cos_angle_, sin_angle_);
     }
 
+    public static Rotation2d getAngle(Rotation2d a1, Rotation2d b1) {
+        Translation2d a = a1.toTranslation();
+        Translation2d b = b1.toTranslation();
+        double cos_angle = Translation2d.dot(a, b) / (a.norm() * b.norm());
+        if (Double.isNaN(cos_angle)) {
+            return new Rotation2d();
+        }
+        return Rotation2d.fromRadians(Math.acos(Math.min(1.0, Math.max(cos_angle, -1.0))));
+    }
+    
     @Override
     public Rotation2d interpolate(Rotation2d other, double x) {
         if (x <= 0) {

@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.team254.lib.util.math.RigidTransform2d;
+import com.team254.lib.util.math.Rotation2d;
 import com.team254.lib.util.math.Translation2d;
 
 /**
@@ -18,8 +20,8 @@ import com.team254.lib.util.math.Translation2d;
  * @see GoalTracker.java
  */
 public class GoalTrack {
-    Map<Double, Translation2d> mObservedPositions = new TreeMap<>();
-    Translation2d mSmoothedPosition = null;
+    Map<Double, RigidTransform2d> mObservedPositions = new TreeMap<>();
+    RigidTransform2d mSmoothedPosition = null;
     int mId;
 
     private GoalTrack() {
@@ -28,7 +30,7 @@ public class GoalTrack {
     /**
      * Makes a new track based on the timestamp and the goal's coordinates (from vision)
      */
-    public static GoalTrack makeNewTrack(double timestamp, Translation2d first_observation, int id) {
+    public static GoalTrack makeNewTrack(double timestamp, RigidTransform2d first_observation, int id) {
         GoalTrack rv = new GoalTrack();
         rv.mObservedPositions.put(timestamp, first_observation);
         rv.mSmoothedPosition = first_observation;
@@ -45,11 +47,11 @@ public class GoalTrack {
      * 
      * @return True if the track was updated
      */
-    public boolean tryUpdate(double timestamp, Translation2d new_observation) {
+    public boolean tryUpdate(double timestamp, RigidTransform2d new_observation) {
         if (!isAlive()) {
             return false;
         }
-        double distance = mSmoothedPosition.inverse().translateBy(new_observation).norm();
+        double distance = mSmoothedPosition.getTranslation().inverse().translateBy(new_observation.getTranslation()).norm();
         if (distance < Constants.kMaxTrackerDistance) {
             mObservedPositions.put(timestamp, new_observation);
             pruneByTime();
@@ -71,8 +73,8 @@ public class GoalTrack {
      */
     void pruneByTime() {
         double delete_before = Timer.getFPGATimestamp() - Constants.kMaxGoalTrackAge;
-        for (Iterator<Map.Entry<Double, Translation2d>> it = mObservedPositions.entrySet().iterator(); it.hasNext();) {
-            Map.Entry<Double, Translation2d> entry = it.next();
+        for (Iterator<Map.Entry<Double, RigidTransform2d>> it = mObservedPositions.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Double, RigidTransform2d> entry = it.next();
             if (entry.getKey() < delete_before) {
                 it.remove();
             }
@@ -91,17 +93,20 @@ public class GoalTrack {
         if (isAlive()) {
             double x = 0;
             double y = 0;
-            for (Map.Entry<Double, Translation2d> entry : mObservedPositions.entrySet()) {
-                x += entry.getValue().x();
-                y += entry.getValue().y();
+            Translation2d theta = new Translation2d();
+            for (Map.Entry<Double, RigidTransform2d> entry : mObservedPositions.entrySet()) {
+                x += entry.getValue().getTranslation().x();
+                y += entry.getValue().getTranslation().y();
+                theta.translateBy(entry.getValue().getRotation().toTranslation());
+//                mSmoothedPosition = entry.getValue();
             }
             x /= mObservedPositions.size();
             y /= mObservedPositions.size();
-            mSmoothedPosition = new Translation2d(x, y);
+            mSmoothedPosition = new RigidTransform2d(new Translation2d(x, y), new Rotation2d(theta, true));
         }
     }
 
-    public Translation2d getSmoothedPosition() {
+    public RigidTransform2d getSmoothedPosition() {
         return mSmoothedPosition;
     }
 

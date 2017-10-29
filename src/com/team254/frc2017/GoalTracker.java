@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import com.team254.lib.util.math.RigidTransform2d;
 import com.team254.lib.util.math.Translation2d;
 
 /**
@@ -20,7 +21,7 @@ public class GoalTracker {
      */
     public static class TrackReport {
         // Translation from the field frame to the goal
-        public Translation2d field_to_goal;
+        public RigidTransform2d field_to_goal;
 
         // The timestamp of the latest time that the goal has been observed
         public double latest_timestamp;
@@ -98,9 +99,9 @@ public class GoalTracker {
         mCurrentTracks.clear();
     }
 
-    public void update(double timestamp, List<Translation2d> field_to_goals) {
+    public void update(double timestamp, List<RigidTransform2d> field_to_goals) {
         // Try to update existing tracks
-        for (Translation2d target : field_to_goals) {
+        for (RigidTransform2d target : field_to_goals) {
             boolean hasUpdatedTrack = false;
             for (GoalTrack track : mCurrentTracks) {
                 if (!hasUpdatedTrack) {
@@ -121,7 +122,7 @@ public class GoalTracker {
         }
         // If all tracks are dead, start new tracks for any detections
         if (mCurrentTracks.isEmpty()) {
-            for (Translation2d target : field_to_goals) {
+            for (RigidTransform2d target : field_to_goals) {
                 mCurrentTracks.add(GoalTrack.makeNewTrack(timestamp, target, mNextId));
                 ++mNextId;
             }

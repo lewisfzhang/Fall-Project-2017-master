@@ -8,6 +8,7 @@ import com.team254.lib.util.math.Rotation2d;
 import com.team254.lib.util.math.Translation2d;
 import com.team254.lib.util.math.Twist2d;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.util.ArrayList;
@@ -51,7 +52,7 @@ public class RobotState {
     private static final int kObservationBufferSize = 100;
 
     private static final RigidTransform2d kVehicleToCamera = new RigidTransform2d(
-            new Translation2d(Constants.kCameraXOffset, Constants.kCameraYOffset), new Rotation2d());
+            new Translation2d(Constants.kCameraXOffset, Constants.kCameraYOffset), Rotation2d.fromDegrees(180));
 
     // FPGATimestamp -> RigidTransform2d or Rotation2d
     private InterpolatingTreeMap<InterpolatingDouble, RigidTransform2d> field_to_vehicle_;
@@ -62,7 +63,7 @@ public class RobotState {
     private Rotation2d camera_pitch_correction_;
     private Rotation2d camera_yaw_correction_;
     private double differential_height_;
-    private ShooterAimingParameters cached_shooter_aiming_params_ = null;
+    private GearAimingParameters cached_shooter_aiming_params_ = null;
 
     private RobotState() {
         reset(0, new RigidTransform2d());
@@ -79,7 +80,7 @@ public class RobotState {
         goal_tracker_ = new GoalTracker();
         camera_pitch_correction_ = Rotation2d.fromDegrees(-Constants.kCameraPitchAngleDegrees);
         camera_yaw_correction_ = Rotation2d.fromDegrees(-Constants.kCameraYawAngleDegrees);
-        differential_height_ = Constants.kBoilerTargetTopHeight - Constants.kCameraZOffset;
+        differential_height_ = Constants.kPegTargetBottomHeight - Constants.kCameraZOffset;
         distance_driven_ = 0.0;
     }
 
@@ -111,7 +112,7 @@ public class RobotState {
     public synchronized List<RigidTransform2d> getCaptureTimeFieldToGoal() {
         List<RigidTransform2d> rv = new ArrayList<>();
         for (TrackReport report : goal_tracker_.getTracks()) {
-            rv.add(RigidTransform2d.fromTranslation(report.field_to_goal));
+            rv.add(report.field_to_goal);
         }
         return rv;
     }
@@ -129,9 +130,10 @@ public class RobotState {
     }
 
     public void addVisionUpdate(double timestamp, List<TargetInfo> vision_update) {
-        List<Translation2d> field_to_goals = new ArrayList<>();
+        List<RigidTransform2d> field_to_goals = new ArrayList<>();
         RigidTransform2d field_to_camera = getFieldToCamera(timestamp);
-        if (!(vision_update == null || vision_update.isEmpty())) {
+        if (!(vision_update == null || vision_update.isEmpty())) { //&& vision_update.size() == 2) {
+//            List<Translation2d> targets = new ArrayList<>();
             for (TargetInfo target : vision_update) {
                 double ydeadband = (target.getY() > -Constants.kCameraDeadband
                         && target.getY() < Constants.kCameraDeadband) ? 0.0 : target.getY();
@@ -147,36 +149,56 @@ public class RobotState {
                 double zr = zyaw * camera_pitch_correction_.cos() - xyaw * camera_pitch_correction_.sin();
 
                 // find intersection with the goal
-                if (zr > 0) {
-                    double scaling = differential_height_ / zr;
-                    double distance = Math.hypot(xr, yr) * scaling + Constants.kBoilerRadius;
-                    Rotation2d angle = new Rotation2d(xr, yr, true);
-                    field_to_goals.add(field_to_camera
-                            .transformBy(RigidTransform2d
-                                    .fromTranslation(new Translation2d(distance * angle.cos(), distance * angle.sin())))
-                            .getTranslation());
-                }
+                double scaling = differential_height_ / zr;
+                double distance = Math.hypot(xr, yr) * scaling;
+                Rotation2d angle = new Rotation2d(xr, yr, true);
+                field_to_goals.add(new RigidTransform2d(
+                        field_to_camera.transformBy(RigidTransform2d.fromTranslation(new Translation2d(distance * angle.cos(), distance * angle.sin()))).getTranslation(),
+                        new Rotation2d()
+                ));
+                //targets.add(field_to_camera.transformBy(RigidTransform2d.fromTranslation(new Translation2d(distance * angle.cos(), distance * angle.sin()))).getTranslation()); //TODO: !!REMOVE .inverse() later!!! 
             }
+//            Rotation2d theta = new Rotation2d(new Translation2d(targets.get(0), targets.get(1)), true).rotateBy(Rotation2d.fromDegrees(90));
+//            Translation2d field_to_peg = targets.get(0).interpolate(targets.get(1), 0.5);
+//            Translation2d peg_to_robot = new Translation2d(field_to_peg, field_to_camera.getTranslation());
+//            if(Translation2d.getAngle(theta.toTranslation(), peg_to_robot).getRadians() >
+//                    Translation2d.getAngle(theta.rotateBy(Rotation2d.fromDegrees(180)).toTranslation(), peg_to_robot).getRadians()) {
+//                theta = theta.rotateBy(Rotation2d.fromDegrees(180));
+//            }
+            
+//            SmartDashboard.putNumber("goal_pose_x", field_to_peg.x());
+//            SmartDashboard.putNumber("goal_pose_y", field_to_peg.y());
+//            SmartDashboard.putNumber("goal_pose_theta", theta.getDegrees());
         }
         synchronized (this) {
             goal_tracker_.update(timestamp, field_to_goals);
         }
     }
 
-    public synchronized Optional<ShooterAimingParameters> getCachedAimingParameters() {
+    public synchronized Optional<GearAimingParameters> getCachedAimingParameters() {
         return cached_shooter_aiming_params_ == null ? Optional.empty() : Optional.of(cached_shooter_aiming_params_);
     }
+    
+    public synchronized Optional<RigidTransform2d> getPegPose() {
+        List<TrackReport> reports = goal_tracker_.getTracks();
+        if (!reports.isEmpty() && Math.abs(Timer.getFPGATimestamp() - reports.get(0).latest_timestamp) < 0.5) {
+            TrackReport report = reports.get(0);
+            return Optional.of(report.field_to_goal);
+        } else {
+            return Optional.empty();
+        }
+    }
 
-    public synchronized Optional<ShooterAimingParameters> getAimingParameters() {
+    public synchronized Optional<GearAimingParameters> getAimingParameters() {
         List<TrackReport> reports = goal_tracker_.getTracks();
         if (!reports.isEmpty()) {
             TrackReport report = reports.get(0);
             Translation2d robot_to_goal = getLatestFieldToVehicle().getValue().getTranslation().inverse()
-                    .translateBy(report.field_to_goal);
+                    .translateBy(report.field_to_goal.getTranslation());
             Rotation2d robot_to_goal_rotation = Rotation2d
                     .fromRadians(Math.atan2(robot_to_goal.y(), robot_to_goal.x()));
 
-            ShooterAimingParameters params = new ShooterAimingParameters(robot_to_goal.norm(), robot_to_goal_rotation,
+            GearAimingParameters params = new GearAimingParameters(robot_to_goal.norm(), robot_to_goal_rotation, report.field_to_goal.getRotation(),
                     report.latest_timestamp, report.stability);
             cached_shooter_aiming_params_ = params;
 
@@ -188,7 +210,7 @@ public class RobotState {
 
     public synchronized void resetVision() {
         goal_tracker_.reset();
-        cached_shooter_aiming_params_ = null;
+//        cached_shooter_aiming_params_ = null;
     }
 
     public synchronized Twist2d generateOdometryFromSensors(double left_encoder_delta_distance,
@@ -221,11 +243,12 @@ public class RobotState {
         List<RigidTransform2d> poses = getCaptureTimeFieldToGoal();
         for (RigidTransform2d pose : poses) {
             // Only output first goal
-            SmartDashboard.putNumber("goal_pose_x", pose.getTranslation().x());
-            SmartDashboard.putNumber("goal_pose_y", pose.getTranslation().y());
-            break;
+//            SmartDashboard.putNumber("goal_pose_x", pose.getTranslation().x());
+//            SmartDashboard.putNumber("goal_pose_y", pose.getTranslation().y());
+//            SmartDashboard.putNumber("goal_pose_theta", pose.getRotation().getDegrees());
+//            break;
         }
-        Optional<ShooterAimingParameters> aiming_params = getCachedAimingParameters();
+        Optional<GearAimingParameters> aiming_params = getCachedAimingParameters();
         if (aiming_params.isPresent()) {
             SmartDashboard.putNumber("goal_range", aiming_params.get().getRange());
             SmartDashboard.putNumber("goal_theta", aiming_params.get().getRobotToGoal().getDegrees());

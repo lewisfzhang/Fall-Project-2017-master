@@ -195,4 +195,8 @@ public class PathFollower {
     public boolean hasPassedMarker(String marker) {
         return mSteeringController.hasPassedMarker(marker);
     }
+    
+    public void updatePath(Path path) {
+        mSteeringController.updatePath(path);
+    }
 }

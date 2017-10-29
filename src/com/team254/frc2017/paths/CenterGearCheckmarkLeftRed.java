@@ -6,10 +6,12 @@ import java.util.ArrayList;
 import com.team254.frc2017.Constants;
 import com.team254.frc2017.paths.PathBuilder.Waypoint;
 import com.team254.frc2017.paths.profiles.PathAdapter;
+import com.team254.frc2017.subsystems.Drive;
 import com.team254.lib.util.control.Lookahead;
 import com.team254.lib.util.control.Path;
 import com.team254.lib.util.control.PathFollower;
 import com.team254.lib.util.math.RigidTransform2d;
+import com.team254.lib.util.math.Rotation2d;
 import com.team254.lib.util.math.Twist2d;
 
 /**
@@ -20,24 +22,24 @@ import com.team254.lib.util.math.Twist2d;
  * @see GearThenHopperShootModeRed
  * @see PathContainer
  */
-public class StartToBoilerGearRed implements PathContainer {
+public class CenterGearCheckmarkLeftRed implements PathContainer {
 
     @Override
     public Path buildPath() {
-        return PathAdapter.getRedBoilerGearPath();
+        return PathAdapter.getRedCenterGearPath1();
     }
 
     @Override
     public RigidTransform2d getStartPose() {
-        return PathAdapter.getRedBoilerStartPose();
+        return new RigidTransform2d(PathAdapter.getRedCenterGearPosition(), Drive.getInstance().getGyroAngle());
     }
 
     @Override
     public boolean isReversed() {
-        return true;
+        return false;
     }
     
     public static void main(String[] args) {
-        System.out.println(new StartToBoilerGearRed().buildPath());
+        System.out.println(new CenterGearCheckmarkLeftRed().buildPath());
     }
 }
